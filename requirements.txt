@@ -5,3 +5,4 @@ bs4
 python-dateutil
 pickle-mixin
 statsmodels==0.12.2
+lxml

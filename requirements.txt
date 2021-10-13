@@ -4,4 +4,4 @@ requests
 bs4
 python-dateutil
 pickle-mixin
-statsmodels
+statsmodels==0.12.2

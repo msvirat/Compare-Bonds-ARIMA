@@ -17,7 +17,8 @@ from statsmodels.tsa.arima_model import ARIMA#library for ARIMA model
 
 
 
-module = pickle.load(open('SGB.pkl', 'rb'))
+with open("SGB.pkl", "rb") as f:
+    module = pickle.load(f)
 module_sbi = pickle.load(open('SBI.pkl', 'rb'))
 module_irfc = pickle.load(open('IRFC.pkl', 'rb'))
 

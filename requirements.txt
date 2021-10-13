@@ -1,0 +1,7 @@
+streamlit
+matplotlib
+requests
+bs4
+python-dateutil
+pickle-mixin
+statsmodels

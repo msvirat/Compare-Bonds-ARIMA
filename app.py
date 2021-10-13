@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt#library for plots
 import requests
 from bs4 import BeautifulSoup as bs
 from dateutil.relativedelta import *
-
+from statsmodels.tsa.arima_model import ARIMA#library for ARIMA model
 
 
 

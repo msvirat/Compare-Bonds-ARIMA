@@ -13,12 +13,10 @@ import matplotlib.pyplot as plt#library for plots
 import requests
 from bs4 import BeautifulSoup as bs
 from dateutil.relativedelta import *
-from statsmodels.tsa.arima_model import ARIMA#library for ARIMA model
 
 
 
-with open("SGB.pkl", "rb") as f:
-    module = pickle.load(f)
+module = pickle.load(open('SGB.pkl', 'rb'))
 module_sbi = pickle.load(open('SBI.pkl', 'rb'))
 module_irfc = pickle.load(open('IRFC.pkl', 'rb'))
 

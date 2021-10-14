@@ -99,7 +99,7 @@ def main():
     choice = st.sidebar.selectbox("Menu", menu)
     if choice == 'Forecast':
         year = st.selectbox("how many years you plan for investment: ", np.arange(5, 9, 1))    
-        if st.button("Predict"):
+        if st.button("Forecast"):
             maturity_date = buy_date + relativedelta(years =+ year)
             fc_series = module.forecast(len(pd.DataFrame(pd.date_range(start = buy_date, end = maturity_date))))[0]
             fc_series = pd.Series(fc_series, index = (pd.date_range(start = pd.to_datetime('today').date(), periods = len(pd.DataFrame(pd.date_range(start = buy_date, end = maturity_date))), freq='D')))

@@ -80,7 +80,7 @@ def interest_IRFC(buy_value, redemption_value, year_average):
 
 def main():
     #set_png_as_page_bg('background.png')
-
+    st.set_page_config(page_title = 'innodadatics', page_icon = ":alien:")
     st.title("Investment on Bonds")
     html_temp = """
     <div style="background-color:#025246 ;padding:10px">

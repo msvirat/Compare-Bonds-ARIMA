@@ -80,7 +80,7 @@ def interest_IRFC(buy_value, redemption_value, year_average):
 
 def main():
     #set_png_as_page_bg('background.png')
-    st.set_page_config(page_title = 'innodadatics', page_icon = ":alien:")
+    st.set_page_config(page_title = 'Innodadatics')
     st.title("Investment on Bonds")
     html_temp = """
     <div style="background-color:#025246 ;padding:10px">
@@ -120,8 +120,8 @@ def main():
             value_4 = round(interest_IRFC(buy_price_2, redemption_value_2, year_average_2), 2)
             st.success(f'The profit percentage for next {year} years in Sovereign Gold Bond is {value_1}%.'.format(year, value_1))
             st.success(f'The profit percentage for next {year} years in SBI Life (Unit II Regular) - Bond Fund Bond is {value_3}%'.format(year,    value_3))
-            st.success(f'The profit percentage for next {year} years in Indian Railway Finance Corporation - N1 Bond is {value_4}%'.format(year,   value_4))
-            compare = {'Sovereign Gold Bond': value_1, 'SBI Life (Unit II Regular) - Bond Fund': value_3, 'Indian Railway Finance Corporation - N1 Seriesx': value_4}
+            st.success(f'The profit percentage for next {year} years in Indian Railway Finance Corporation - N1 Series is {value_4}%'.format(year,   value_4))
+            compare = {'Sovereign Gold Bond': value_1, 'SBI Life (Unit II Regular) - Bond Fund': value_3, 'Indian Railway Finance Corporation - N1 Series': value_4}
             result_1 = max(compare, key = compare.get)
             result_2 = max(value_1, value_3, value_4)
             st.success(f'Best investment in bond for next {year} years is {result_1} and profit percentage is {result_2}%'.format(year, result_1, result_2))
@@ -155,7 +155,7 @@ def main():
             st.subheader("Data Collection:")
             st.write('In Gold Bond, we have collected Standard (physical) gold bonds and Sovereign Gold Bond dataset whereas in General bonds, collected SBI Life (Unit II Regular) - Bond Fund and Indian Railway Finance Corporation dataset.')
             st.subheader("Forecasting Model:")
-            st.write('We are here use ARIMA model for forecasting and streamlit tool for deployment.')
+            st.write('We are here use ARIMA model for forecasting and Streamlit tool for deployment.')
 
             
     elif choice == 'About us':
@@ -178,7 +178,7 @@ def main():
             st.subheader("[Saikumar Godha] (https://www.linkedin.com/in/saikumar-godha-42081115a) ")
             st.subheader("[Yash Bohra] (http://linkedin.com/in/yash-bohra-014b15197) ")
             st.subheader("[Paritala Harshitha] (https://www.linkedin.com/in/harshitha-paritala1) ")
-            st.subheader("[Abdulkadhar] (https://www.linkedin.com/in/abdulkadar-shaikh-46bbb3190) ")
+            st.subheader("[Abdulkadar Shaikh] (https://www.linkedin.com/in/abdulkadar-shaikh-46bbb3190) ")
             st.subheader("[B.DivyaSuma] (www.linkedin.com/in/divya-suma-697a0517b) ")
             st.subheader("[Ashish Singh] (https://www.linkedin.com/in/ashish-singh-684b10194) ")
             st.subheader("[Madhuri Mattarparthy] (https://www.linkedin.com/in/madhuri-mattaparthy-0a8562138)  ")

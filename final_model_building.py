@@ -5,6 +5,7 @@ Created on Sun Sep 19 10:36:22 2021
 @author: Sathiya vigraman M
 """
 
+
 import pandas as pd#library to handle dataframe
 import numpy as np#library for scientific computing
 import matplotlib.pyplot as plt#library for plots
@@ -13,6 +14,7 @@ from bs4 import BeautifulSoup as bs#library for scraping
 import investpy#library for scraping
 from nsepy import get_history#library for scraping
 from sqlalchemy import *#library for SQL
+import pymysql #library for SQL
 import warnings#library for skip warning
 from datetime import date#library for handle DateTime format
 from dateutil.relativedelta import *#library for handle DateTime format
@@ -27,48 +29,12 @@ from statsmodels.tsa.arima_model import ARIMA#library for ARIMA model
 from sklearn.metrics import mean_squared_error, mean_absolute_error#library for finding error in model
 import pickle#library for Pickle model into pkl file
 
+
+
 warnings.filterwarnings('ignore')
 
 
-#-------SGB------------
-
-
-#Scrapping live data from URL
-df_SGB = pd.DataFrame()
-
-for j in range(15, 22):
-    for i in range (1, 13):
-        data_frame = []
-        url = 'https://www.livechennai.com/get_goldrate_history.asp?monthno='+str(i)+'&yearno=20'+str(j)
-        response = requests.get(url)
-        soup = bs(response.content, 'html.parser')
-        tbl = soup.findAll('table', attrs = {'class', 'table-price'})
-        data_frame = pd.read_html(str(tbl), header = 0)[0]
-        df_SGB = pd.concat([df_SGB, data_frame], axis = 0)
- 
-del response, i, j, soup, tbl, data_frame, url
-
-#Shape of the data
-print(df_SGB.shape)
-
-#First and last row of data
-df_SGB.tail()
-df_SGB.head()
-
-#df_SGB.to_csv('Gold_Data.csv')
-
-#Trim the data
-df_SGB = df_SGB.iloc[:, 0:2]
-
-#Rename the data column
-df_SGB.columns = ['Date', 'pure_gold']
-
-#Change Date colunm to DateTime format 
-df_SGB['Date']= pd.to_datetime(df_SGB['Date'])
-
-#Set Date Colunm as Index
-df_SGB.set_index('Date', inplace=True)
-
+#------Functions-------------
 
 #Some Basic EDA & Plottings
 def eda(data):
@@ -126,14 +92,13 @@ def decomposition(data):
     plt.xlabel('Day')
 
 
-
-
-
-#EDA & Plots before imputation
-eda(df_SGB['pure_gold'])
-qqplot(df_SGB['pure_gold'])
-acf_pacf(df_SGB['pure_gold'])
-decomposition(df_SGB['pure_gold'])
+#Histogram 
+def histogram(data):
+    plt.hist(data)
+    plt.xlabel('Price')
+    plt.ylabel('Count')
+    plt.title('Histogram of Data')
+    plt.show()
 
 
 #Function for Miss Dates
@@ -153,43 +118,19 @@ def imputation(data):
     plt.show()
     return dummy
 
-
-
-# imputation missing dates
-df_SGB = imputation(df_SGB)
-
-
-#EDA & Plots after imputation
-eda(df_SGB['pure_gold'])
-qqplot(df_SGB['pure_gold'])
-acf_pacf(df_SGB['pure_gold'])
-decomposition(df_SGB['pure_gold'])
-
-
-
-#Split Data into Train and Test
-df_SGB_train = df_SGB.loc[:'2020-12-31', :]#loc last is inclusive
-df_SGB_test = df_SGB.loc['2021-1-1':, :]
-
-
-
-#Auto ARIMA - to find p, d, q
-model_auto = auto_arima(df_SGB.dropna(), seasonal = False)
-model_auto.summary()
-
-
-#ARIMA for training data
-
-
-arima_model = ARIMA(df_SGB_train, order=model_auto.order, freq = 'D')
-fitted_SGB1 = arima_model.fit(disp = -1)
-print(fitted_SGB1.summary())
-
+#to find p, d, q
+def adfuller_test(sales):
+    result=adfuller(sales)
+    labels = ['ADF Test Statistic','p-value','#Lags Used','Number of Observations Used']
+    for value,label in zip(result,labels):
+        print(label+' : '+str(value) )
+    if result[1] <= 0.05:
+        print("strong evidence against the null hypothesis(Ho), reject the null hypothesis. Data has no unit root and is stationary")
+    else:
+        print("weak evidence against null hypothesis, time series has a unit root, indicating it is non-stationary ")
+    
 
 # Forecast for test data
-
-
-
 def forecast_test(fitted, train, test):
     fc, se, conf = fitted.forecast(len(test), alpha=0.05)  # 95% confidence
     fc_series_test = pd.Series(fc, index = test.index)
@@ -215,16 +156,7 @@ def forecast_test(fitted, train, test):
 
 
 
-forecast_test(fitted_SGB1, df_SGB_train, df_SGB_test)
-
-
-#ARIMA ---- Main model ---- SGB
-
-arima_model = ARIMA(df_SGB.dropna(), order=model_auto.order, freq='d')
-fitted_SGB = arima_model.fit(disp = -1)
-print(fitted_SGB.summary())
-
-
+# Forecast for main data
 
 def forecast_main(fitted, data):
     fc, se, conf = fitted.forecast(len(pd.DataFrame(pd.date_range(start = pd.to_datetime('today').date(), end = pd.to_datetime('today').date() + relativedelta(years =+ 5)))), alpha=0.05)  # 95% confidence
@@ -244,9 +176,111 @@ def forecast_main(fitted, data):
 
 
 
+#-------SGB------------
+
+
+#Scrapping live data from URL
+df_SGB = pd.DataFrame()
+
+for j in range(15, 22):
+    for i in range (1, 13):
+        data_frame = []
+        url = 'https://www.livechennai.com/get_goldrate_history.asp?monthno='+str(i)+'&yearno=20'+str(j)
+        response = requests.get(url)
+        soup = bs(response.content, 'html.parser')
+        tbl = soup.findAll('table', attrs = {'class', 'table-price'})
+        data_frame = pd.read_html(str(tbl), header = 0)[0]
+        df_SGB = pd.concat([df_SGB, data_frame], axis = 0)
+
+
+#SQL
+
+connection=create_engine('mysql+pymysql://root:@localhost/sgb')
+try:
+    df.to_sql(name = 'sgb', con = connection, if_exists = 'replace', index = False)
+    df=pd.read_sql("sgb",connection)
+except:
+    pass
+
+
+del response, i, j, soup, tbl, data_frame, url , connection
+
+
+#Shape of the data
+print(df_SGB.shape)
+
+#First and last row of data
+df_SGB.head()
+df_SGB.tail()
+
+#Trim the data
+df_SGB = df_SGB.iloc[:, 0:2]
+
+#Rename the data column
+df_SGB.columns = ['Date', 'pure_gold']
+
+#Change Date colunm to DateTime format 
+df_SGB['Date']= pd.to_datetime(df_SGB['Date'])
+
+#Set Date Colunm as Index
+df_SGB.set_index('Date', inplace=True)
+
+
+#EDA & Plots before imputation
+eda(df_SGB['pure_gold'])
+qqplot(df_SGB['pure_gold'])
+histogram(df_SGB)
+decomposition(df_SGB['pure_gold'])
+acf_pacf(df_SGB['pure_gold'])
+
+
+
+# imputation missing dates
+df_SGB = imputation(df_SGB)
+
+
+#EDA & Plots after imputation
+eda(df_SGB['pure_gold'])
+qqplot(df_SGB['pure_gold'])
+histogram(df_SGB)
+decomposition(df_SGB['pure_gold'])
+acf_pacf(df_SGB['pure_gold'])
+
+
+#Split Data into Train and Test
+df_SGB_train = df_SGB.loc[:'2020-12-31', :]#loc last is inclusive
+df_SGB_test = df_SGB.loc['2021-1-1':, :]
+
+
+
+#Auto ARIMA - to find p, d, q
+model_auto = auto_arima(df_SGB.dropna(), seasonal = False)
+model_auto.summary()
+
+
+#ARIMA for training data
+
+arima_model = ARIMA(df_SGB_train, order=model_auto.order, freq = 'D')
+fitted_SGB1 = arima_model.fit(disp = -1)
+print(fitted_SGB1.summary())
+
+
+# Forecast for test data
+forecast_test(fitted_SGB1, df_SGB_train, df_SGB_test)
+
+
+
+#ARIMA ---- Main model ---- SGB
+
+arima_model = ARIMA(df_SGB.dropna(), order=model_auto.order, freq='d')
+fitted_SGB = arima_model.fit(disp = -1)
+print(fitted_SGB.summary())
+
+
 SGB_forecast = forecast_main(fitted_SGB, df_SGB)
 
 
+#Pickle
 pickle.dump(fitted_SGB, open('SGB.pkl', 'wb'))
 
 
@@ -260,38 +294,32 @@ del arima_model, df_SGB_test, df_SGB_train, fitted_SGB, fitted_SGB1, model_auto
 
 
 
-
+#Scraping data from investpy
 search_result = investpy.search_quotes(text='Sbi Life - Bond Fund', products = ['funds'], countries=['INDIA'], n_results = 1)
 historical_data = search_result.retrieve_historical_data(from_date='01/01/2015', to_date = str(date.today().strftime('%d/%m/%Y')))
 print(historical_data.tail())
 historical_data.describe()
 
-#historical_data.to_csv('SBI.csv')
 
-'''
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="admin",
-  database="sbi_life"
-  )
 
-mycursor = mydb.cursor()
-mycursor.execute("SELECT Dates, Open FROM sbi")
-myresult = mycursor.fetchall()
+#SQL
+connection=create_engine('mysql+pymysql://root:@localhost/sbi')
+try:
+    df.to_sql(name = 'sbi', con = connection, if_exists = 'replace', index = False)
+    df=pd.read_sql("sbi",connection)
+except:
+    pass
 
-df_SBI= pd.DataFrame(historical_data, columns=["Date", "Price"])
-df_SBI.set_index('Date', inplace = True) 
 
-'''
 #Trimming data
-df_SBI= pd.DataFrame(historical_data, columns=["Close"])
+df_SBI = pd.DataFrame(historical_data, columns=["Close"])
 
 #EDA & plot before imputation 
 eda(df_SBI['Close'])
 qqplot(df_SBI['Close'])
-acf_pacf(df_SBI['Close'])
+histogram(df_SBI)
 decomposition(df_SBI['Close'])
+acf_pacf(df_SBI['Close'])
 
 # Handling missing dates
 df_SBI = imputation(df_SBI)
@@ -299,14 +327,12 @@ df_SBI = imputation(df_SBI)
 #EDA & plot after imputation 
 eda(df_SBI['Close'])
 qqplot(df_SBI['Close'])
-acf_pacf(df_SBI['Close'])
+histogram(df_SBI)
 decomposition(df_SBI['Close'])
-
+acf_pacf(df_SBI['Close'])
 
 
 del historical_data, search_result
-
-
 
 
 #train, test data
@@ -315,14 +341,15 @@ test_data =  df_SBI.loc['2021-03-01':, :]
 
 
 #AutoARIMA for bestfit
-model_autoARIMA = auto_arima(train_data, test='adf', seasonal=False)
+model_autoARIMA = auto_arima(df_SBI, test='adf', seasonal=False)
 print(model_autoARIMA.summary())
 
 
 #model building - train data
 model = ARIMA(train_data, order=model_autoARIMA.order, freq = 'D')   #best fit value from autoarima
-fitted = model.fit(disp=-1)  
+fitted = model.fit(disp=-1)
 print(fitted.summary())
+
 
 #forecast-test data
 forecast_test(fitted, train_data, test_data)
@@ -330,7 +357,6 @@ forecast_test(fitted, train_data, test_data)
 
 
 #Main model building
-
 
 model = ARIMA(df_SBI, order=model_autoARIMA.order, freq = 'D')   #best fit value from autoarima
 fitted_SBI = model.fit(disp=-1)
@@ -344,8 +370,7 @@ SBI_forecast = forecast_main(fitted_SBI, df_SBI)
 pickle.dump(fitted_SBI, open('SBI.pkl', 'wb'))
 
 
-
-del fitted, fitted_SBI, model, model_autoARIMA, test_data, train_data
+del fitted, fitted_SBI, model, model_autoARIMA, test_data, train_data, connection
 
 
 
@@ -360,25 +385,20 @@ df_IRFC = get_history(symbol="IRFC",series = "N1",start=date(2015,1,1),end=date.
 df_IRFC = df_IRFC.reset_index()
 df_IRFC.drop(['Symbol','Series','Turnover',"%Deliverble"],axis =1,inplace =True)
 
-#SQL 
-'''
-Server='DESKTOP-93HMQ5Q\SQLEXPRESS'
-Database='yash'
-Driver='SQL Server'
-username='DESKTOP-93HMQ5Q\Yash bohra'
-dbconnect=f'mssql://@{Server}/{Database}?driver={Driver}'
-engine=create_engine(dbconnect)
-connection=engine.connect()
-df_IRFC.to_sql(name = 'my_table1', con = connection, if_exists = 'replace', index = False)
-df_IRFC1=pd.read_sql("my_table1",connection)
-print(df_IRFC1)
-'''
+
+#SQL
+
+connection=create_engine('mysql+pymysql://root:@localhost/irfc')
+try:
+    df.to_sql(name = 'irfcc', con = connection, if_exists = 'replace', index = False)
+    df=pd.read_sql("irfcc",connection)
+except:
+    pass
+
 
 
 #Convert Data column as DateTime format
 df_IRFC['Date']= pd.to_datetime(df_IRFC['Date'])
-
-
 
 
 #Set Date Colunm as Index
@@ -391,8 +411,9 @@ df_IRFC = pd.DataFrame(df_IRFC['Close'])
 #EDA & Plotting before imputation
 eda(df_IRFC['Close'])
 qqplot(df_IRFC['Close'])
-acf_pacf(df_IRFC['Close'])
+histogram(df_IRFC)
 decomposition(df_IRFC['Close'])
+acf_pacf(df_IRFC['Close'])
 
 #Handling missing date
 df_IRFC = imputation(df_IRFC)
@@ -401,31 +422,23 @@ df_IRFC = imputation(df_IRFC)
 #EDA & Plotting after imputation
 eda(df_IRFC['Close'])
 qqplot(df_IRFC['Close'])
-acf_pacf(df_IRFC['Close'])
+histogram(df_IRFC)
 decomposition(df_IRFC['Close'])
+acf_pacf(df_IRFC['Close'])
 
 
-
-#to find p, d, q
-def adfuller_test(sales):
-    result=adfuller(sales)
-    labels = ['ADF Test Statistic','p-value','#Lags Used','Number of Observations Used']
-    for value,label in zip(result,labels):
-        print(label+' : '+str(value) )
-    if result[1] <= 0.05:
-        print("strong evidence against the null hypothesis(Ho), reject the null hypothesis. Data has no unit root and is stationary")
-    else:
-        print("weak evidence against null hypothesis, time series has a unit root, indicating it is non-stationary ")
-    
+#Adfuller for d value
 adfuller_test(df_IRFC)
 
 #d = 0
 
+#ACF & PACF for finding p & q
 
 acf_pacf(df_IRFC['Close'])
 
 #p = 1
 #q = 1
+
 
 #Splitting Data
 df_IRFC_train = df_IRFC.loc[:'2020-12-31', :]#loc last is inclusive
@@ -443,9 +456,6 @@ forecast_test(fitted_IRFC, df_IRFC_train, df_IRFC_test)
 
 
 
-
-
-
 #Main Forecast
 arima_model = ARIMA(df_IRFC, order=(1, 0, 1), freq = 'D')
 fitted_IRFC = arima_model.fit(disp=-1)
@@ -458,4 +468,4 @@ IRFC_forecast = forecast_main(fitted_IRFC, df_IRFC)
 pickle.dump(fitted_IRFC, open('IRFC.pkl', 'wb'))
 
 
-del arima_model, df_IRFC_train, df_IRFC_test, fitted_IRFC
+del arima_model, df_IRFC_train, df_IRFC_test, fitted_IRFC, connection

@@ -29,9 +29,15 @@ from statsmodels.tsa.arima_model import ARIMA#library for ARIMA model
 from sklearn.metrics import mean_squared_error, mean_absolute_error#library for finding error in model
 import pickle#library for Pickle model into pkl file
 
-
-
+#ignore warnings
 warnings.filterwarnings('ignore')
+
+#change working dic. (pickle in the same folder where file saved)
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+
+
 
 
 #------Functions-------------
